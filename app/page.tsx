@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Send,
   ArrowDownLeft,
@@ -29,6 +29,9 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import Link from "next/link";
+import { useAuth } from "./auth/AuthContext";
+import UserMenu from "./components/UserMenu";
 
 // Sample chart data
 const chartData = [
@@ -122,6 +125,12 @@ export default function HomePage() {
   const [showAppsModal, setShowAppsModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [assetsVisible, setAssetsVisible] = useState(true);
+  const { isAuthenticated, isLoading, user } = useAuth();
+
+  // Debug auth state
+  useEffect(() => {
+    console.log("HomePage - Auth state:", { isAuthenticated, isLoading, user });
+  }, [isAuthenticated, isLoading, user]);
 
   const filteredAssets = allAssets.filter(asset => 
     asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -152,33 +161,46 @@ export default function HomePage() {
           </nav>
         </div>
         <div className="flex items-center gap-6">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-white/5 transition-colors">
-            <Send className="w-4 h-4" />
-            Send
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-white/5 transition-colors">
-            <ArrowDownLeft className="w-4 h-4" />
-            Receive
-          </button>
-          <div className="flex items-center gap-3">
-            <img
-              src="https://ui-avatars.com/api/?name=James+Doe&background=6366f1&color=fff"
-              alt="Profile"
-              className="w-10 h-10 rounded-full"
-            />
-            <div className="text-sm">
-              <div className="font-medium">James Doe</div>
-              <div className="text-gray-400 text-xs">james@gmail.com</div>
-            </div>
-            <MoreVertical className="w-4 h-4 text-gray-400" />
-          </div>
+          {isLoading ? null : !isAuthenticated ? (
+            <Link 
+              href="/auth/welcome" 
+              className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-lg transition-colors text-sm font-medium"
+            >
+              Log in
+            </Link>
+          ) : (
+            <>
+              <button className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-white/5 transition-colors">
+                <Send className="w-4 h-4" />
+                Send
+              </button>
+              <button className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-white/5 transition-colors">
+                <ArrowDownLeft className="w-4 h-4" />
+                Receive
+              </button>
+              <UserMenu />
+            </>
+          )}
         </div>
       </header>
 
       {/* Mobile Header */}
       <div className="md:hidden px-4 py-4">
-        <div className="flex items-center justify-center">
-          <div className="text-xs bg-white/10 rounded-full px-3 py-1">⭕</div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Grid3x3 className="w-5 h-5 text-purple-400" />
+            <span className="font-semibold">Wallet.app</span>
+          </div>
+          {isLoading ? null : !isAuthenticated ? (
+            <Link 
+              href="/auth/welcome" 
+              className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium"
+            >
+              Log in
+            </Link>
+          ) : (
+            <UserMenu />
+          )}
         </div>
       </div>
 
@@ -186,6 +208,33 @@ export default function HomePage() {
       <div className="flex">
         {/* Mobile/Desktop Content */}
         <div className="flex-1 p-4 md:p-8 max-w-full md:max-w-none">
+          {isLoading ? (
+            <div className="flex items-center justify-center min-h-[60vh]">
+              <div className="animate-pulse">
+                <div className="w-16 h-16 bg-purple-500/20 rounded-full"></div>
+              </div>
+            </div>
+          ) : !isAuthenticated ? (
+            /* Logged Out State */
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+              <div className="mb-8">
+                <div className="w-32 h-32 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <CreditCard className="w-16 h-16 text-purple-400" />
+                </div>
+                <h2 className="text-3xl font-bold mb-4">Welcome to Wallet.app</h2>
+                <p className="text-gray-400 max-w-md">
+                  Your secure gateway to manage digital assets. Log in to access your wallet and start trading.
+                </p>
+              </div>
+              <Link 
+                href="/auth/welcome" 
+                className="bg-purple-500 hover:bg-purple-600 text-white px-8 py-3 rounded-xl transition-colors font-medium"
+              >
+                Get Started
+              </Link>
+            </div>
+          ) : (
+            <>
           {/* Balance Section */}
           <div className="mb-6 md:mb-8">
             <div className="flex items-center gap-2 text-gray-400 mb-2">
@@ -297,49 +346,52 @@ export default function HomePage() {
           </div>
 
           {/* Latest Activity - Desktop Only */}
-          <div className="hidden md:block">
-            <h2 className="text-gray-400 mb-4">Latest activity</h2>
-            <div className="glass-card overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="text-left text-sm text-gray-400 border-b border-white/10">
-                    <th className="p-4">Pair</th>
-                    <th className="p-4">Time</th>
-                    <th className="p-4">Type</th>
-                    <th className="p-4">Quantity</th>
-                    <th className="p-4 text-right">Price</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {activities.map((activity) => (
-                    <tr key={activity.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          {activity.avatar ? (
-                            <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-sm">
-                              {activity.avatar}
-                            </div>
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-sm">
-                              {activity.icon}
-                            </div>
-                          )}
-                          <span>{activity.pair}</span>
-                        </div>
-                      </td>
-                      <td className="p-4 text-gray-400">{activity.time}</td>
-                      <td className="p-4">{activity.type}</td>
-                      <td className="p-4">{activity.quantity}</td>
-                      <td className="p-4 text-right">{activity.price}</td>
+                      <div className="hidden md:block">
+              <h2 className="text-gray-400 mb-4">Latest activity</h2>
+              <div className="glass-card overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-left text-sm text-gray-400 border-b border-white/10">
+                      <th className="p-4">Pair</th>
+                      <th className="p-4">Time</th>
+                      <th className="p-4">Type</th>
+                      <th className="p-4">Quantity</th>
+                      <th className="p-4 text-right">Price</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {activities.map((activity) => (
+                      <tr key={activity.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            {activity.avatar ? (
+                              <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-sm">
+                                {activity.avatar}
+                              </div>
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-sm">
+                                {activity.icon}
+                              </div>
+                            )}
+                            <span>{activity.pair}</span>
+                          </div>
+                        </td>
+                        <td className="p-4 text-gray-400">{activity.time}</td>
+                        <td className="p-4">{activity.type}</td>
+                        <td className="p-4">{activity.quantity}</td>
+                        <td className="p-4 text-right">{activity.price}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
+            </>
+          )}
           </div>
-        </div>
 
         {/* Right Sidebar - Desktop Only */}
+        {!isLoading && isAuthenticated && (
         <div className="hidden md:block w-80 p-8 border-l border-white/10">
           {/* Apps Section */}
           <div className="mb-8">
@@ -425,39 +477,42 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#1a1a2e] border-t border-white/10">
-        <div className="flex items-center justify-around py-2">
-          <button className="flex flex-col items-center gap-1 p-2 text-purple-400">
-            <CreditCard className="w-5 h-5" />
-            <span className="text-xs">Balance</span>
-          </button>
-          <button 
-            onClick={() => setShowActivityModal(true)}
-            className="flex flex-col items-center gap-1 p-2 text-gray-400"
-          >
-            <BarChart3 className="w-5 h-5" />
-            <span className="text-xs">History</span>
-          </button>
-          <button 
-            onClick={() => setShowAppsModal(true)}
-            className="flex flex-col items-center gap-1 p-2 text-gray-400"
-          >
-            <Home className="w-5 h-5" />
-            <span className="text-xs">New Capital</span>
-          </button>
-          <button className="flex flex-col items-center gap-1 p-2 text-gray-400">
-            <Grid3x3 className="w-5 h-5" />
-            <span className="text-xs">Apps</span>
-          </button>
-          <button className="flex flex-col items-center gap-1 p-2 text-gray-400">
-            <User className="w-5 h-5" />
-            <span className="text-xs">Settings</span>
-          </button>
+      {!isLoading && isAuthenticated && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#1a1a2e] border-t border-white/10">
+          <div className="flex items-center justify-around py-2">
+            <button className="flex flex-col items-center gap-1 p-2 text-purple-400">
+              <CreditCard className="w-5 h-5" />
+              <span className="text-xs">Balance</span>
+            </button>
+            <button 
+              onClick={() => setShowActivityModal(true)}
+              className="flex flex-col items-center gap-1 p-2 text-gray-400"
+            >
+              <BarChart3 className="w-5 h-5" />
+              <span className="text-xs">History</span>
+            </button>
+            <button 
+              onClick={() => setShowAppsModal(true)}
+              className="flex flex-col items-center gap-1 p-2 text-gray-400"
+            >
+              <Home className="w-5 h-5" />
+              <span className="text-xs">New Capital</span>
+            </button>
+            <button className="flex flex-col items-center gap-1 p-2 text-gray-400">
+              <Grid3x3 className="w-5 h-5" />
+              <span className="text-xs">Apps</span>
+            </button>
+            <button className="flex flex-col items-center gap-1 p-2 text-gray-400">
+              <User className="w-5 h-5" />
+              <span className="text-xs">Settings</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Mobile Assets Arrange Modal */}
       {showAssetsModal && (
